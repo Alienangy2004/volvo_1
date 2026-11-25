@@ -950,6 +950,278 @@ body {
   color: #ffffff;
 }
 
+.replay-voice-btn.speaking {
+  background: rgba(239, 68, 68, 0.22);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.45);
+}
+
+/* ============================================================================
+   DOCK DE NAVEGACIÓN ESTILO GOOGLE MAPS / STREET VIEW (MINIMAPA, PEGMAN, BRÚJULA Y D-PAD)
+   ============================================================================ */
+.gmaps-nav-dock {
+  position: absolute;
+  bottom: 5.4rem;
+  right: 1.1rem;
+  width: 245px;
+  background: rgba(10, 17, 32, 0.92);
+  backdrop-filter: blur(18px);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: 18px;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.65);
+  z-index: 15;
+}
+
+.gmaps-minimap {
+  position: relative;
+  width: 100%;
+  height: 112px;
+  background: #070e1c;
+  border: 1px solid rgba(56, 189, 248, 0.38);
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: crosshair;
+  background-image:
+    linear-gradient(rgba(56, 189, 248, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(56, 189, 248, 0.08) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+.minimap-zone {
+  position: absolute;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.18rem 0.35rem;
+  border-radius: 6px;
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+
+.minimap-zone.t3 {
+  left: 5%;
+  top: 16%;
+  width: 24%;
+  height: 44%;
+  background: rgba(245, 158, 11, 0.18);
+  border: 1px solid rgba(245, 158, 11, 0.55);
+  color: #fde68a;
+}
+
+.minimap-zone.t1 {
+  left: 33%;
+  top: 16%;
+  width: 32%;
+  height: 44%;
+  background: rgba(56, 189, 248, 0.18);
+  border: 1px solid rgba(56, 189, 248, 0.55);
+  color: #bae6fd;
+}
+
+.minimap-zone.t2 {
+  right: 5%;
+  top: 16%;
+  width: 24%;
+  height: 44%;
+  background: rgba(168, 85, 247, 0.18);
+  border: 1px solid rgba(168, 85, 247, 0.55);
+  color: #e9d5ff;
+}
+
+.minimap-zone.t4 {
+  left: 33%;
+  bottom: 6%;
+  width: 32%;
+  height: 28%;
+  background: rgba(34, 197, 94, 0.18);
+  border: 1px solid rgba(34, 197, 94, 0.55);
+  color: #bbf7d0;
+}
+
+.minimap-user-marker {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  pointer-events: none;
+  transition: left 0.1s linear, top 0.1s linear;
+}
+
+.marker-fov {
+  position: absolute;
+  top: -12px;
+  left: 3px;
+  width: 0;
+  height: 0;
+  border-left: 9px solid transparent;
+  border-right: 9px solid transparent;
+  border-top: 16px solid rgba(56, 189, 248, 0.45);
+}
+
+.marker-dot {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #38bdf8;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 8px #38bdf8;
+}
+
+.gmaps-mode-toggles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.38rem;
+}
+
+.gmaps-pegman-btn,
+.gmaps-pan-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  width: 100%;
+  background: rgba(20, 32, 56, 0.92);
+  color: #f8fafc;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 10px;
+  padding: 0.45rem 0.65rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s var(--ease-smooth);
+}
+
+.gmaps-pegman-btn:hover,
+.gmaps-pan-btn:hover {
+  border-color: var(--accent);
+  background: rgba(14, 165, 233, 0.22);
+}
+
+.gmaps-pegman-btn.active {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border-color: #fde68a;
+  color: #090d16;
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.4);
+}
+
+.gmaps-pan-btn.active {
+  background: rgba(14, 165, 233, 0.3);
+  border-color: #38bdf8;
+}
+
+.gmaps-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem;
+}
+
+.gmaps-compass-btn {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(17, 28, 50, 0.95);
+  border: 2px solid rgba(56, 189, 248, 0.45);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.gmaps-compass-btn:hover {
+  border-color: #38bdf8;
+  transform: scale(1.06);
+}
+
+.compass-needle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s linear;
+}
+
+.needle-n {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #ef4444;
+  line-height: 1;
+}
+
+.needle-s {
+  width: 4px;
+  height: 10px;
+  background: #cbd5e1;
+  border-radius: 2px;
+  margin-top: 2px;
+}
+
+.gmaps-dpad {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.dpad-mid {
+  display: flex;
+  gap: 18px;
+}
+
+.dpad-btn {
+  width: 32px;
+  height: 28px;
+  border-radius: 7px;
+  background: rgba(20, 33, 58, 0.92);
+  color: #e2e8f0;
+  border: 1px solid rgba(56, 189, 248, 0.32);
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: all 0.16s ease;
+}
+
+.dpad-btn:hover {
+  background: rgba(14, 165, 233, 0.35);
+  border-color: #38bdf8;
+  color: #ffffff;
+}
+
+.gmaps-zoom-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.zoom-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  background: rgba(20, 33, 58, 0.92);
+  color: #ffffff;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  font-size: 1.15rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: all 0.16s ease;
+}
+
+.zoom-btn:hover {
+  background: rgba(14, 165, 233, 0.35);
+  border-color: #38bdf8;
+}
+
 /* Indicador de Pensando con 3 Puntos Animados */
 .thinking-bubble {
   display: flex;

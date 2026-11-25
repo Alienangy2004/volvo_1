@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useWorkshopState } from '~/composables/useWorkshopState'
-import { WorkshopEngine } from '~/three/WorkshopEngine'
+import { WorkshopEngine, type CameraNavTelemetry } from '~/three/WorkshopEngine'
 import type {
   CameraPresetId,
   EnvironmentThemeId,
@@ -10,14 +10,22 @@ import type {
 
 const containerRef = ref<HTMLElement | null>(null)
 const fileInputRef = ref<HTMLInputElement | null>(null)
+const minimapRef = ref<HTMLElement | null>(null)
 const hoverCoords = ref({ x: 0, y: 0 })
 const isDraggingGlb = ref(false)
+const isStreetView = ref(false)
+const isLeftPanMode = ref(false)
+const navTelemetry = ref<CameraNavTelemetry>({
+  x: 0,
+  z: 0,
+  yawDeg: 0,
+  streetView: false
+})
 let engine: WorkshopEngine | null = null
 
 const {
   state,
   workshopZones,
-  currentWorkshopZone,
   hoveredElement,
   selectObject,
   setHoveredObject,
@@ -72,6 +80,37 @@ const personnelModes: { id: PersonnelActionMode; label: string }[] = [
   { id: 'repair', label: 'Operario Reparando' }
 ]
 
+// Posición en porcentaje sobre el minimapa interactivo (x: -36 a +36, z: -13 a +19)
+const minimapMarkerStyle = computed(() => {
+  const pctX = Math.min(96, Math.max(4, ((navTelemetry.value.x + 36) / 72) * 100))
+  const pctY = Math.min(96, Math.max(4, ((navTelemetry.value.z + 13) / 32) * 100))
+  return {
+    left: `${pctX}%`,
+    top: `${pctY}%`,
+    transform: `translate(-50%, -50%) rotate(${navTelemetry.value.yawDeg}deg)`
+  }
+})
+
+function toggleStreetViewMode() {
+  isStreetView.value = !isStreetView.value
+  engine?.setStreetViewMode(isStreetView.value)
+}
+
+function toggleLeftPanMode() {
+  isLeftPanMode.value = !isLeftPanMode.value
+  engine?.setLeftClickPanMode(isLeftPanMode.value)
+}
+
+function onMinimapClick(e: MouseEvent) {
+  if (!minimapRef.value || !engine) return
+  const rect = minimapRef.value.getBoundingClientRect()
+  const normX = (e.clientX - rect.left) / rect.width
+  const normY = (e.clientY - rect.top) / rect.height
+  const worldX = normX * 72 - 36
+  const worldZ = normY * 32 - 13
+  engine.walkOrGlideToFloorPoint(worldX, worldZ)
+}
+
 function triggerFilePicker() {
   fileInputRef.value?.click()
 }
@@ -111,7 +150,11 @@ onMounted(() => {
         if (pos) hoverCoords.value = pos
       },
       onStatusChange: (status, message) => setSceneStatus(status, message),
-      onModelLoaded: (fileName) => registerLoadedGlb(fileName)
+      onModelLoaded: (fileName) => registerLoadedGlb(fileName),
+      onCameraTelemetry: (t) => {
+        navTelemetry.value = t
+        isStreetView.value = t.streetView
+      }
     })
     engine.highlightObject(state.selectedObjectId)
   } catch (err) {
@@ -126,6 +169,7 @@ onMounted(() => {
 watch(
   () => state.cameraCommand.nonce,
   () => {
+    isStreetView.value = false
     engine?.setCameraPreset(state.cameraCommand.preset)
   }
 )
@@ -202,7 +246,7 @@ onBeforeUnmount(() => {
   >
     <div ref="containerRef" class="three-canvas-host" />
 
-    <!-- Marco Holográfico AR / VR tipo Videojuego -->
+    <!-- Marco Holográfico AR / VR -->
     <div v-if="state.arHudMode" class="xr-visor-overlay" aria-hidden="true">
       <span class="xr-corner tl" />
       <span class="xr-corner tr" />
@@ -231,7 +275,6 @@ onBeforeUnmount(() => {
         </button>
       </div>
 
-      <!-- Acceso Rápido a las Piezas de Camión (.GLB) + Selector de Animación (Ingeniero vs Operario) -->
       <div class="parts-hud-strip">
         <span class="parts-hud-label">PIEZAS GLB:</span>
         <button
@@ -250,7 +293,7 @@ onBeforeUnmount(() => {
         </button>
 
         <span class="hud-sep">|</span>
-        <span class="parts-hud-label">ANIMACIÓN:</span>
+        <span class="parts-hud-label">PERSONAL:</span>
         <button
           v-for="pm in personnelModes"
           :key="pm.id"
@@ -306,6 +349,130 @@ onBeforeUnmount(() => {
       </button>
     </div>
 
+    <!-- ========================================================================
+         DOCK DE NAVEGACIÓN ESTILO GOOGLE MAPS / STREET VIEW (Brújula, Pegman, D-Pad y Minimapa)
+         ======================================================================== -->
+    <aside class="gmaps-nav-dock" aria-label="Controles de navegación estilo Google Maps">
+      <!-- 1. Minimapa interactivo de los 4 talleres (clic para ir a cualquier punto) -->
+      <div
+        ref="minimapRef"
+        class="gmaps-minimap"
+        title="Haz clic en cualquier punto del mapa para desplazarte allí"
+        @click="onMinimapClick"
+      >
+        <div class="minimap-zone t3">T03 Chasis</div>
+        <div class="minimap-zone t1">T01 FH / FMX</div>
+        <div class="minimap-zone t2">T02 Cabina</div>
+        <div class="minimap-zone t4">T04 Interior</div>
+
+        <div class="minimap-user-marker" :style="minimapMarkerStyle">
+          <span class="marker-fov" />
+          <span class="marker-dot" />
+        </div>
+      </div>
+
+      <!-- 2. Botón Pegman Street View (A pie 1.78m) + Modo Arrastrar Mapa -->
+      <div class="gmaps-mode-toggles">
+        <button
+          type="button"
+          class="gmaps-pegman-btn"
+          :class="{ active: isStreetView }"
+          title="Alternar vista a pie Street View (1.78m) o Mapa 3D Aéreo"
+          @click="toggleStreetViewMode"
+        >
+          <span class="pegman-icon">🚶</span>
+          <span>{{ isStreetView ? 'Salir Street View' : 'Street View (A Pie)' }}</span>
+        </button>
+
+        <button
+          type="button"
+          class="gmaps-pan-btn"
+          :class="{ active: isLeftPanMode }"
+          title="Alternar clic izquierdo entre Rotar 3D y Arrastrar Mapa"
+          @click="toggleLeftPanMode"
+        >
+          {{ isLeftPanMode ? '✋ Arrastrar Mapa' : '🔄 Rotar 3D' }}
+        </button>
+      </div>
+
+      <!-- 3. Brújula 3D + Cruceta de Caminata (WASD) + Zoom (+/-) -->
+      <div class="gmaps-controls-row">
+        <!-- Brújula Google Maps -->
+        <button
+          type="button"
+          class="gmaps-compass-btn"
+          title="Orientar cámara al Norte"
+          @click="engine?.resetCompassNorth()"
+        >
+          <div
+            class="compass-needle"
+            :style="{ transform: `rotate(${-navTelemetry.yawDeg}deg)` }"
+          >
+            <span class="needle-n">N</span>
+            <span class="needle-s" />
+          </div>
+        </button>
+
+        <!-- Cruceta direccional para caminar como Street View -->
+        <div class="gmaps-dpad">
+          <button
+            type="button"
+            class="dpad-btn up"
+            title="Avanzar (W / Flecha Arriba)"
+            @click="engine?.stepMove(2.2, 0)"
+          >
+            ▲
+          </button>
+          <div class="dpad-mid">
+            <button
+              type="button"
+              class="dpad-btn left"
+              title="Desplazar izquierda (A) / Girar"
+              @click="isStreetView ? engine?.stepRotateYaw(0.35) : engine?.stepMove(0, -2.2)"
+            >
+              ◄
+            </button>
+            <button
+              type="button"
+              class="dpad-btn right"
+              title="Desplazar derecha (D) / Girar"
+              @click="isStreetView ? engine?.stepRotateYaw(-0.35) : engine?.stepMove(0, 2.2)"
+            >
+              ►
+            </button>
+          </div>
+          <button
+            type="button"
+            class="dpad-btn down"
+            title="Retroceder (S / Flecha Abajo)"
+            @click="engine?.stepMove(-2.2, 0)"
+          >
+            ▼
+          </button>
+        </div>
+
+        <!-- Botones Zoom + / - -->
+        <div class="gmaps-zoom-stack">
+          <button
+            type="button"
+            class="zoom-btn"
+            title="Acercar zoom"
+            @click="engine?.stepZoom(0.78)"
+          >
+            +
+          </button>
+          <button
+            type="button"
+            class="zoom-btn"
+            title="Alejar zoom"
+            @click="engine?.stepZoom(1.25)"
+          >
+            −
+          </button>
+        </div>
+      </div>
+    </aside>
+
     <!-- Overlay al arrastrar archivos .GLB sobre la escena -->
     <div v-if="isDraggingGlb" class="glb-drop-overlay">
       <div class="glb-drop-box">
@@ -349,7 +516,9 @@ onBeforeUnmount(() => {
         :key="btn.id"
         type="button"
         class="cam-btn"
-        :class="{ active: !state.autoTour && state.cameraCommand.preset === btn.id }"
+        :class="{
+          active: !state.autoTour && !isStreetView && state.cameraCommand.preset === btn.id
+        }"
         @click="moveCameraTo(btn.id)"
       >
         {{ btn.label }}
@@ -368,7 +537,11 @@ onBeforeUnmount(() => {
     </div>
 
     <div class="controls-hint">
-      [XR HUD] Arrastra para rotar • Rueda para zoom • Habla con la IA por voz (Deepgram + Ollama)
+      {{
+        isStreetView
+          ? '🚶 [STREET VIEW ACTIVO] Haz clic en cualquier punto del piso o usa W A S D / Flechas para caminar por el taller'
+          : '🗺️ [NAVEGACIÓN GOOGLE MAPS] Doble clic en el piso o clic en los círculos azules para ir • Teclas W A S D / Flechas para moverte'
+      }}
     </div>
   </div>
 </template>

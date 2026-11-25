@@ -2,6 +2,13 @@
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useWorkshopState } from '~/composables/useWorkshopState'
 
+// Singletons a nivel de ventana para garantizar que JAMÁS suenen 2 voces al mismo tiempo
+let globalSpeechSessionId = 0
+let globalTtsAbortController: AbortController | null = null
+let globalActiveAudio: HTMLAudioElement | null = null
+let globalAudioUrl: string | null = null
+const ttsBlobCache = new Map<string, Blob>()
+
 const {
   state,
   selectedElement,
@@ -16,6 +23,7 @@ const isRecording = ref(false)
 const isTranscribing = ref(false)
 const isThinking = ref(false)
 const isSpeaking = ref(false)
+const speakingMsgId = ref<string | null>(null)
 const voiceEnabled = ref(true)
 const ollamaOnline = ref(false)
 const ollamaModels = ref<string[]>([])
@@ -25,7 +33,6 @@ const messagesBoxRef = ref<HTMLElement | null>(null)
 
 let mediaRecorder: MediaRecorder | null = null
 let recordedChunks: BlobPart[] = []
-let currentAudio: HTMLAudioElement | null = null
 
 const quickPrompts = [
   { icon: '📋', text: '¿Qué órdenes pendientes se tienen hoy?' },
@@ -86,63 +93,168 @@ async function fetchOllamaModels() {
   }
 }
 
-async function speakTextWithDeepgram(text: string, force = false) {
-  if ((!voiceEnabled.value && !force) || !text.trim()) return
-  stopAudioPlayback()
-  isSpeaking.value = true
+/**
+ * Cancela inmediatamente cualquier petición TTS en vuelo, cualquier elemento Audio activo
+ * y cualquier síntesis del navegador, garantizando una única voz activa.
+ */
+function stopAudioPlayback() {
+  globalSpeechSessionId++
 
-  try {
-    const res = await fetch('/api/deepgram/tts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text })
-    })
+  if (globalTtsAbortController) {
+    globalTtsAbortController.abort()
+    globalTtsAbortController = null
+  }
 
-    if (res.ok) {
-      const blob = await res.blob()
-      const url = URL.createObjectURL(blob)
-      currentAudio = new Audio(url)
-      currentAudio.onended = () => {
-        isSpeaking.value = false
-        URL.revokeObjectURL(url)
-      }
-      currentAudio.onerror = () => {
-        isSpeaking.value = false
-        URL.revokeObjectURL(url)
-      }
-      await currentAudio.play()
-      return
+  if (globalActiveAudio) {
+    try {
+      globalActiveAudio.onended = null
+      globalActiveAudio.onerror = null
+      globalActiveAudio.pause()
+      globalActiveAudio.currentTime = 0
+      globalActiveAudio.src = ''
+    } catch {
+      // Ignorar errores al limpiar audio
     }
-  } catch {
-    // Respaldo con síntesis de voz del navegador
+    globalActiveAudio = null
+  }
+
+  if (globalAudioUrl) {
+    URL.revokeObjectURL(globalAudioUrl)
+    globalAudioUrl = null
   }
 
   if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
     window.speechSynthesis.cancel()
-    const utter = new SpeechSynthesisUtterance(text)
+  }
+
+  isSpeaking.value = false
+  speakingMsgId.value = null
+}
+
+function handleMessageVoiceButton(msgId: string, text: string) {
+  // Si este mismo mensaje ya se está reproduciendo, el botón lo detiene en vez de duplicarlo
+  if (isSpeaking.value && speakingMsgId.value === msgId) {
+    stopAudioPlayback()
+    return
+  }
+  speakTextWithDeepgram(text, true, msgId)
+}
+
+async function speakTextWithDeepgram(text: string, force = false, msgId: string | null = null) {
+  const cleanText = text.trim()
+  if ((!voiceEnabled.value && !force) || !cleanText) return
+
+  // 1. Detener y abortar cualquier audio o descarga previa
+  stopAudioPlayback()
+  const mySessionId = ++globalSpeechSessionId
+  isSpeaking.value = true
+  speakingMsgId.value = msgId
+
+  // 2. Obtener el Blob de audio desde caché o desde Deepgram TTS (con AbortController)
+  let audioBlob: Blob | null = ttsBlobCache.get(cleanText) ?? null
+
+  if (!audioBlob) {
+    const controller = new AbortController()
+    globalTtsAbortController = controller
+    try {
+      const res = await fetch('/api/deepgram/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: cleanText }),
+        signal: controller.signal
+      })
+
+      if (mySessionId !== globalSpeechSessionId) return
+
+      if (res.ok) {
+        audioBlob = await res.blob()
+        if (mySessionId !== globalSpeechSessionId) return
+        if (audioBlob && audioBlob.size > 100) {
+          ttsBlobCache.set(cleanText, audioBlob)
+        }
+      }
+    } catch (err: unknown) {
+      // Si fue abortado porque el usuario inició otra reproducción, salir silenciosamente
+      if (err instanceof DOMException && err.name === 'AbortError') return
+      if (mySessionId !== globalSpeechSessionId) return
+    } finally {
+      if (globalTtsAbortController === controller) {
+        globalTtsAbortController = null
+      }
+    }
+  }
+
+  // Verificar nuevamente que ninguna otra voz haya iniciado mientras se descargaba
+  if (mySessionId !== globalSpeechSessionId) return
+
+  // 3. Si tenemos audio de Deepgram, reproducir ÚNICAMENTE este audio (sin caer jamás en speechSynthesis)
+  if (audioBlob && audioBlob.size > 100) {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel()
+    }
+
+    const url = URL.createObjectURL(audioBlob)
+    globalAudioUrl = url
+    const audio = new Audio(url)
+    globalActiveAudio = audio
+
+    audio.onended = () => {
+      if (mySessionId === globalSpeechSessionId) {
+        isSpeaking.value = false
+        speakingMsgId.value = null
+      }
+      if (globalAudioUrl === url) {
+        URL.revokeObjectURL(url)
+        globalAudioUrl = null
+      }
+    }
+
+    audio.onerror = () => {
+      if (mySessionId === globalSpeechSessionId) {
+        isSpeaking.value = false
+        speakingMsgId.value = null
+      }
+      if (globalAudioUrl === url) {
+        URL.revokeObjectURL(url)
+        globalAudioUrl = null
+      }
+    }
+
+    try {
+      await audio.play()
+    } catch {
+      if (mySessionId === globalSpeechSessionId) {
+        isSpeaking.value = false
+        speakingMsgId.value = null
+      }
+    }
+    return
+  }
+
+  // 4. Solo si Deepgram no devolvió audio (p. ej. sin internet), usar una única instancia de Web Speech
+  if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    window.speechSynthesis.cancel()
+    if (mySessionId !== globalSpeechSessionId) return
+    const utter = new SpeechSynthesisUtterance(cleanText)
     utter.lang = 'es-MX'
     utter.rate = 1.03
     utter.onend = () => {
-      isSpeaking.value = false
+      if (mySessionId === globalSpeechSessionId) {
+        isSpeaking.value = false
+        speakingMsgId.value = null
+      }
     }
     utter.onerror = () => {
-      isSpeaking.value = false
+      if (mySessionId === globalSpeechSessionId) {
+        isSpeaking.value = false
+        speakingMsgId.value = null
+      }
     }
     window.speechSynthesis.speak(utter)
   } else {
     isSpeaking.value = false
+    speakingMsgId.value = null
   }
-}
-
-function stopAudioPlayback() {
-  if (currentAudio) {
-    currentAudio.pause()
-    currentAudio = null
-  }
-  if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-    window.speechSynthesis.cancel()
-  }
-  isSpeaking.value = false
 }
 
 function clearConversation() {
@@ -170,6 +282,7 @@ async function sendPromptToOllama(userText: string) {
   const clean = userText.trim()
   if (!clean || isThinking.value) return
 
+  stopAudioPlayback()
   const executedAction = executeNaturalLanguageCommand(clean)
 
   state.aiMessages.push({
@@ -247,12 +360,13 @@ async function sendPromptToOllama(userText: string) {
   }
 
   isThinking.value = false
-  statusHint.value = `Conectado a ${modelUsed || 'Ollama'} • Voz Deepgram lista`
+  statusHint.value = `Conectado a ${modelUsed || 'Ollama'} • Voz única Deepgram`
 
   const replyAction = !executedAction ? executeNaturalLanguageCommand(replyText) : undefined
+  const assistantMsgId = `a-${Date.now()}`
 
   state.aiMessages.push({
-    id: `a-${Date.now()}`,
+    id: assistantMsgId,
     role: 'assistant',
     text: replyText,
     timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -260,7 +374,7 @@ async function sendPromptToOllama(userText: string) {
   })
   await scrollToBottom()
 
-  await speakTextWithDeepgram(replyText)
+  await speakTextWithDeepgram(replyText, false, assistantMsgId)
 }
 
 async function toggleMicrophoneRecording() {
@@ -340,7 +454,6 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="ai-chat-container">
-    <!-- Botón flotante moderno cuando el chat está minimizado -->
     <Transition name="fade-scale">
       <button
         v-if="!isOpen"
@@ -357,7 +470,6 @@ onBeforeUnmount(() => {
       </button>
     </Transition>
 
-    <!-- Ventana de Chat estilo IA Moderna (ChatGPT / Gemini / Claude) -->
     <Transition name="chat-window-pop">
       <section
         v-if="isOpen"
@@ -365,7 +477,6 @@ onBeforeUnmount(() => {
         :class="{ expanded: isExpanded }"
         aria-label="Asistente de Inteligencia Artificial"
       >
-        <!-- Cabecera del Chat -->
         <header class="ai-header">
           <div class="ai-brand">
             <div class="ai-brand-avatar">
@@ -404,8 +515,13 @@ onBeforeUnmount(() => {
               type="button"
               class="icon-ctrl-btn"
               :class="{ active: voiceEnabled }"
-              :title="voiceEnabled ? 'Voz activada (clic para silenciar)' : 'Voz silenciada'"
-              @click="voiceEnabled = !voiceEnabled"
+              :title="voiceEnabled ? 'Voz automática activada' : 'Voz automática silenciada'"
+              @click="
+                () => {
+                  voiceEnabled = !voiceEnabled
+                  if (!voiceEnabled) stopAudioPlayback()
+                }
+              "
             >
               {{ voiceEnabled ? '🔊' : '🔇' }}
             </button>
@@ -436,7 +552,6 @@ onBeforeUnmount(() => {
           </div>
         </header>
 
-        <!-- Cuerpo de Mensajes con Burbujas Modernas -->
         <div ref="messagesBoxRef" class="ai-chat-feed">
           <article
             v-for="msg in state.aiMessages"
@@ -467,15 +582,19 @@ onBeforeUnmount(() => {
                 <button
                   type="button"
                   class="replay-voice-btn"
-                  @click="speakTextWithDeepgram(msg.text, true)"
+                  :class="{ speaking: isSpeaking && speakingMsgId === msg.id }"
+                  @click="handleMessageVoiceButton(msg.id, msg.text)"
                 >
-                  🔊 Escuchar respuesta
+                  {{
+                    isSpeaking && speakingMsgId === msg.id
+                      ? '⏹ Detener voz'
+                      : '🔊 Escuchar respuesta'
+                  }}
                 </button>
               </div>
             </div>
           </article>
 
-          <!-- Indicador animado cuando la IA está pensando o transcribiendo -->
           <div v-if="isTranscribing || isThinking" class="chat-turn assistant thinking-turn">
             <div class="turn-avatar">🤖</div>
             <div class="turn-content-wrap">
@@ -497,7 +616,6 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <!-- Sugerencias Rápidas Amigables -->
         <div class="ai-suggestions-carousel">
           <button
             v-for="(qp, idx) in quickPrompts"
@@ -511,7 +629,6 @@ onBeforeUnmount(() => {
           </button>
         </div>
 
-        <!-- Barra de Entrada Moderna tipo ChatGPT / Gemini -->
         <footer class="ai-composer-area">
           <form class="composer-box" @submit.prevent="sendPromptToOllama(inputPrompt)">
             <button
