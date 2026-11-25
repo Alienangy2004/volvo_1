@@ -1,0 +1,9 @@
+{
+  "pid": 7208,
+  "startedAt": 1795580328301,
+  "command": "dev",
+  "cwd": "C:/Users/ditom/Proyectos/volvo-workshop-3d-nuxt4/volvo-workshop-3d",
+  "port": 3000,
+  "hostname": "::1",
+  "url": "http://[::1]:3000"
+}
