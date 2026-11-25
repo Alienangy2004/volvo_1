@@ -50,32 +50,60 @@ const CAMERA_PRESETS: Record<CameraPresetId, CameraPreset> = {
   }
 }
 
+// 34 puntos de movilidad distribuidos por todos los pasillos, bahías y estaciones de los 4 talleres
 const STREET_VIEW_WAYPOINTS: Array<{ x: number; z: number; lookX: number; lookZ: number }> = [
-  { x: -5.5, z: 5.5, lookX: -5.5, lookZ: -1.0 },
-  { x: 2.0, z: 5.5, lookX: 2.0, lookZ: -1.0 },
-  { x: 9.2, z: 4.8, lookX: 10.5, lookZ: 1.5 },
-  { x: 18.2, z: 3.8, lookX: 21.5, lookZ: -1.6 },
-  { x: 26.8, z: 3.5, lookX: 28.8, lookZ: -1.2 },
-  { x: -18.2, z: 4.2, lookX: -21.6, lookZ: -1.2 },
-  { x: -27.5, z: 3.8, lookX: -29.2, lookZ: -1.2 },
-  { x: -3.8, z: 15.8, lookX: -3.8, lookZ: 12.2 },
-  { x: 3.8, z: 15.8, lookX: 3.8, lookZ: 12.2 },
-  { x: 0, z: 6.5, lookX: 0, lookZ: -1.5 }
-]
+  // Pasillo Central Principal (Oeste a Este)
+  { x: -30.5, z: 5.6, lookX: -29.2, lookZ: -1.2 },
+  { x: -25.5, z: 5.6, lookX: -21.6, lookZ: -1.2 },
+  { x: -21.6, z: 5.6, lookX: -21.6, lookZ: -1.2 },
+  { x: -17.0, z: 5.6, lookX: -21.6, lookZ: -1.2 },
+  { x: -12.5, z: 5.6, lookX: -9.9, lookZ: 1.4 },
+  { x: -8.5, z: 5.6, lookX: -5.5, lookZ: -1.0 },
+  { x: -5.5, z: 5.6, lookX: -5.5, lookZ: -1.0 },
+  { x: -1.8, z: 5.6, lookX: -1.8, lookZ: -1.0 },
+  { x: 2.0, z: 5.6, lookX: 2.0, lookZ: -1.0 },
+  { x: 5.8, z: 5.6, lookX: 4.5, lookZ: 1.3 },
+  { x: 9.8, z: 5.6, lookX: 10.2, lookZ: 2.2 },
+  { x: 14.5, z: 5.6, lookX: 21.5, lookZ: -1.6 },
+  { x: 18.5, z: 5.6, lookX: 21.5, lookZ: -1.6 },
+  { x: 21.5, z: 5.6, lookX: 21.5, lookZ: -1.6 },
+  { x: 25.5, z: 5.6, lookX: 28.8, lookZ: -1.2 },
+  { x: 29.5, z: 5.6, lookX: 28.8, lookZ: -1.2 },
 
-export interface CameraNavTelemetry {
-  x: number
-  z: number
-  yawDeg: number
-  streetView: boolean
-}
+  // Interior Taller 01 (Alrededor de Volvo FH16, Volvo FMX, Almacén y Motor D16)
+  { x: -8.8, z: -1.0, lookX: -5.5, lookZ: -1.0 },
+  { x: -5.5, z: -6.2, lookX: -5.5, lookZ: -1.0 },
+  { x: -1.8, z: -1.0, lookX: -5.5, lookZ: -1.0 },
+  { x: -1.8, z: -5.8, lookX: 2.0, lookZ: -1.0 },
+  { x: 2.0, z: -6.2, lookX: 2.0, lookZ: -1.0 },
+  { x: 6.2, z: -1.5, lookX: 2.0, lookZ: -1.0 },
+  { x: 8.8, z: -5.5, lookX: 11.2, lookZ: -8.5 },
+  { x: 9.5, z: -1.5, lookX: 12.2, lookZ: -2.5 },
+
+  // Interior Taller 02 (Alrededor de Carrocería y Puerta)
+  { x: 17.2, z: -1.6, lookX: 21.5, lookZ: -1.6 },
+  { x: 21.5, z: -6.4, lookX: 21.5, lookZ: -1.6 },
+  { x: 25.4, z: -1.4, lookX: 21.5, lookZ: -1.6 },
+  { x: 28.8, z: -4.8, lookX: 28.8, lookZ: -1.2 },
+
+  // Interior Taller 03 (Alrededor del Chasis 7.45m y Laboratorio de Aire)
+  { x: -17.2, z: -1.2, lookX: -21.6, lookZ: -1.2 },
+  { x: -21.6, z: -6.4, lookX: -21.6, lookZ: -1.2 },
+  { x: -25.8, z: -1.2, lookX: -21.6, lookZ: -1.2 },
+  { x: -29.2, z: -4.8, lookX: -29.2, lookZ: -1.2 },
+
+  // Interior Taller 04 (Laboratorio de Tablero Digital y Asientos Neumáticos)
+  { x: -7.5, z: 12.2, lookX: -3.8, lookZ: 12.2 },
+  { x: 0.0, z: 10.2, lookX: 0.0, lookZ: 12.5 },
+  { x: 0.0, z: 15.8, lookX: 0.0, lookZ: 12.2 },
+  { x: 7.5, z: 12.2, lookX: 3.8, lookZ: 12.2 }
+]
 
 export interface WorkshopEngineCallbacks {
   onSelect: (id: string | null) => void
   onHover: (id: string | null, screenPos?: { x: number; y: number }) => void
   onStatusChange: (status: 'loading' | 'ready' | 'fallback' | 'error', message: string) => void
   onModelLoaded?: (fileName: string) => void
-  onCameraTelemetry?: (telemetry: CameraNavTelemetry) => void
 }
 
 function createSkyDomeTexture(theme: EnvironmentThemeId): THREE.CanvasTexture {
@@ -100,10 +128,10 @@ function createSkyDomeTexture(theme: EnvironmentThemeId): THREE.CanvasTexture {
     grad.addColorStop(0.56, '#022c22')
     grad.addColorStop(1, '#010409')
   } else {
-    grad.addColorStop(0, '#040711')
-    grad.addColorStop(0.35, '#0b152c')
-    grad.addColorStop(0.49, '#1e1b4b')
-    grad.addColorStop(0.53, '#0284c7')
+    grad.addColorStop(0, '#050c1a')
+    grad.addColorStop(0.35, '#0d1f42')
+    grad.addColorStop(0.49, '#182871')
+    grad.addColorStop(0.53, '#0077ff')
     grad.addColorStop(0.57, '#0f172a')
     grad.addColorStop(1, '#050811')
   }
@@ -126,7 +154,7 @@ function createSkyDomeTexture(theme: EnvironmentThemeId): THREE.CanvasTexture {
       ? 'rgba(251, 191, 36, 0.25)'
       : theme === 'vr_matrix'
         ? 'rgba(34, 211, 238, 0.35)'
-        : 'rgba(56, 189, 248, 0.28)'
+        : 'rgba(0, 163, 255, 0.32)'
   ctx.lineWidth = 2
   for (let y = 250; y <= 290; y += 10) {
     ctx.beginPath()
@@ -161,20 +189,18 @@ export class WorkshopEngine {
   private targetControlsLook: THREE.Vector3 | null = null
   private desiredLiftY = 0
   private autoTourEnabled = false
-  private streetViewMode = false
-  private leftClickPanMode = false
   private personnelActionMode: PersonnelActionMode = 'auto'
   private selectionRing: THREE.Mesh
   private selectionBaseScale = 1
   private currentHighlightedId: string | null = null
   private pointerDownPos = { x: 0, y: 0 }
   private lastDiagDraw = 0
-  private lastTelemetryTime = 0
   private disposed = false
 
-  // Elementos de navegación estilo Google Maps / Street View
+  // Puntos de movilidad en piso estilo Google Maps / Street View
   private streetCursorGroup: THREE.Group
   private waypointMeshes: THREE.Mesh[] = []
+  private hoveredWaypointMesh: THREE.Mesh | null = null
   private keysPressed = new Set<string>()
 
   constructor(container: HTMLElement, callbacks: WorkshopEngineCallbacks) {
@@ -182,8 +208,8 @@ export class WorkshopEngine {
     this.callbacks = callbacks
 
     this.scene = new THREE.Scene()
-    this.scene.background = new THREE.Color(0x060b14)
-    this.scene.fog = new THREE.FogExp2(0x060b14, 0.0095)
+    this.scene.background = new THREE.Color(0x060c1a)
+    this.scene.fog = new THREE.FogExp2(0x060c1a, 0.009)
 
     const width = container.clientWidth || window.innerWidth
     const height = container.clientHeight || window.innerHeight
@@ -213,10 +239,9 @@ export class WorkshopEngine {
     this.controls = new OrbitControls(this.camera, this.renderer.domElement)
     this.controls.enableDamping = true
     this.controls.dampingFactor = 0.06
-    // Panning paralelo al suelo (igual que Google Maps 3D)
     this.controls.screenSpacePanning = false
     this.controls.maxPolarAngle = Math.PI / 2 - 0.02
-    this.controls.minDistance = 0.8
+    this.controls.minDistance = 1.2
     this.controls.maxDistance = 52
     this.controls.target.copy(CAMERA_PRESETS.overview.target)
 
@@ -229,7 +254,7 @@ export class WorkshopEngine {
     this.selectionRing = new THREE.Mesh(
       new THREE.RingGeometry(1.1, 1.32, 48).rotateX(-Math.PI / 2),
       new THREE.MeshBasicMaterial({
-        color: 0x38bdf8,
+        color: 0x00a3ff,
         transparent: true,
         opacity: 0.9,
         side: THREE.DoubleSide
@@ -238,11 +263,9 @@ export class WorkshopEngine {
     this.selectionRing.visible = false
     this.scene.add(this.selectionRing)
 
-    // Cursor de suelo estilo Google Street View (círculo + disco central que sigue al puntero en el piso)
     this.streetCursorGroup = this.buildStreetViewGroundCursor()
     this.scene.add(this.streetCursorGroup)
 
-    // Nodos / puntos de paso Street View en los pasillos de los 4 talleres
     this.buildStreetViewWaypoints()
 
     this.bindEvents()
@@ -253,27 +276,27 @@ export class WorkshopEngine {
   private buildStreetViewGroundCursor(): THREE.Group {
     const g = new THREE.Group()
     const outerRing = new THREE.Mesh(
-      new THREE.RingGeometry(0.55, 0.72, 36).rotateX(-Math.PI / 2),
+      new THREE.RingGeometry(0.58, 0.78, 36).rotateX(-Math.PI / 2),
       new THREE.MeshBasicMaterial({
-        color: 0x38bdf8,
+        color: 0x00a3ff,
         transparent: true,
-        opacity: 0.82,
+        opacity: 0.88,
         side: THREE.DoubleSide,
         depthWrite: false
       })
     )
     const innerDisc = new THREE.Mesh(
-      new THREE.CircleGeometry(0.38, 32).rotateX(-Math.PI / 2),
+      new THREE.CircleGeometry(0.4, 32).rotateX(-Math.PI / 2),
       new THREE.MeshBasicMaterial({
-        color: 0xe0f2fe,
+        color: 0xffffff,
         transparent: true,
-        opacity: 0.35,
+        opacity: 0.42,
         side: THREE.DoubleSide,
         depthWrite: false
       })
     )
     g.add(outerRing, innerDisc)
-    g.position.y = 0.028
+    g.position.y = 0.03
     g.visible = false
     g.traverse((c) => {
       c.raycast = () => {}
@@ -282,27 +305,41 @@ export class WorkshopEngine {
   }
 
   private buildStreetViewWaypoints() {
-    const wpGeo = new THREE.RingGeometry(0.35, 0.56, 32).rotateX(-Math.PI / 2)
-    const wpInnerGeo = new THREE.CircleGeometry(0.24, 24).rotateX(-Math.PI / 2)
+    const wpOuterGeo = new THREE.RingGeometry(0.46, 0.72, 36).rotateX(-Math.PI / 2)
+    const wpMidGeo = new THREE.RingGeometry(0.24, 0.34, 32).rotateX(-Math.PI / 2)
+    const wpInnerGeo = new THREE.CircleGeometry(0.16, 24).rotateX(-Math.PI / 2)
 
     for (const wp of STREET_VIEW_WAYPOINTS) {
       const mat = new THREE.MeshBasicMaterial({
-        color: 0x38bdf8,
+        color: 0x0088ff,
         transparent: true,
-        opacity: 0.65,
+        opacity: 0.78,
         side: THREE.DoubleSide,
         depthWrite: false
       })
-      const mesh = new THREE.Mesh(wpGeo, mat)
-      mesh.position.set(wp.x, 0.026, wp.z)
+      const mesh = new THREE.Mesh(wpOuterGeo, mat)
+      mesh.position.set(wp.x, 0.028, wp.z)
       mesh.userData.streetWaypoint = wp
+
+      const midRing = new THREE.Mesh(
+        wpMidGeo,
+        new THREE.MeshBasicMaterial({
+          color: 0x38bdf8,
+          transparent: true,
+          opacity: 0.65,
+          side: THREE.DoubleSide,
+          depthWrite: false
+        })
+      )
+      midRing.userData.streetWaypoint = wp
+      mesh.add(midRing)
 
       const inner = new THREE.Mesh(
         wpInnerGeo,
         new THREE.MeshBasicMaterial({
           color: 0xffffff,
           transparent: true,
-          opacity: 0.5,
+          opacity: 0.85,
           side: THREE.DoubleSide,
           depthWrite: false
         })
@@ -382,8 +419,8 @@ export class WorkshopEngine {
       this.mainDirLight.intensity = 1.85
       this.hemiLight.color.setHex(0x38bdf8)
     } else {
-      this.scene.background = new THREE.Color(0x060b14)
-      this.scene.fog = new THREE.FogExp2(0x060b14, 0.009)
+      this.scene.background = new THREE.Color(0x060c1a)
+      this.scene.fog = new THREE.FogExp2(0x060c1a, 0.009)
       this.mainDirLight.color.setHex(0xfffbeb)
       this.mainDirLight.intensity = 1.98
       this.hemiLight.color.setHex(0xdbeafe)
@@ -418,65 +455,7 @@ export class WorkshopEngine {
   }
 
   /**
-   * Alterna entre modo Mapa 3D Aéreo y modo Street View (Caminar a pie a 1.78m de altura)
-   */
-  public setStreetViewMode(enabled: boolean) {
-    this.streetViewMode = enabled
-    this.autoTourEnabled = false
-    this.controls.autoRotate = false
-
-    const dir = new THREE.Vector3()
-      .subVectors(this.controls.target, this.camera.position)
-      .setY(0)
-    if (dir.lengthSq() < 0.01) dir.set(0, 0, -1)
-    dir.normalize()
-
-    if (enabled) {
-      // Bajar cámara a nivel de ojos (1.78m) frente al punto observado
-      const standX = THREE.MathUtils.clamp(this.controls.target.x - dir.x * 3.8, -33, 33)
-      const standZ = THREE.MathUtils.clamp(this.controls.target.z - dir.z * 3.8, -10.5, 16.5)
-      this.targetCameraPos = new THREE.Vector3(standX, 1.78, standZ)
-      this.targetControlsLook = new THREE.Vector3(
-        standX + dir.x * 2.5,
-        1.72,
-        standZ + dir.z * 2.5
-      )
-    } else {
-      // Elevar cámara a vista Mapa 3D Aéreo conservando posición actual
-      const basePos = this.camera.position
-      this.targetCameraPos = new THREE.Vector3(
-        basePos.x - dir.x * 6.5,
-        7.8,
-        basePos.z - dir.z * 6.5
-      )
-      this.targetControlsLook = new THREE.Vector3(
-        basePos.x + dir.x * 3.2,
-        1.5,
-        basePos.z + dir.z * 3.2
-      )
-    }
-  }
-
-  public isStreetViewActive(): boolean {
-    return this.streetViewMode
-  }
-
-  /**
-   * Cambia el botón izquierdo del ratón entre Rotar 3D y Arrastrar Mapa (como Google Maps)
-   */
-  public setLeftClickPanMode(panWithLeft: boolean) {
-    this.leftClickPanMode = panWithLeft
-    if (panWithLeft) {
-      this.controls.mouseButtons.LEFT = THREE.MOUSE.PAN
-      this.controls.mouseButtons.RIGHT = THREE.MOUSE.ROTATE
-    } else {
-      this.controls.mouseButtons.LEFT = THREE.MOUSE.ROTATE
-      this.controls.mouseButtons.RIGHT = THREE.MOUSE.PAN
-    }
-  }
-
-  /**
-   * Desplaza al usuario hacia cualquier coordenada (x, z) del piso (estilo clic en Google Street View / Minimapa)
+   * Desplaza suavemente la cámara hacia cualquier punto de movilidad (x, z) en el suelo
    */
   public walkOrGlideToFloorPoint(x: number, z: number, lookAtX?: number, lookAtZ?: number) {
     this.autoTourEnabled = false
@@ -485,43 +464,11 @@ export class WorkshopEngine {
     const clampedX = THREE.MathUtils.clamp(x, -34, 34)
     const clampedZ = THREE.MathUtils.clamp(z, -11, 17.5)
 
-    const currentForward = new THREE.Vector3()
-      .subVectors(this.controls.target, this.camera.position)
-      .setY(0)
-    if (currentForward.lengthSq() < 0.001) currentForward.set(0, 0, -1)
-    currentForward.normalize()
-
-    if (this.streetViewMode) {
-      // En Street View: caminar a nivel de ojos (1.78m) hasta el punto clicado
-      let dirX = currentForward.x
-      let dirZ = currentForward.z
-      if (typeof lookAtX === 'number' && typeof lookAtZ === 'number') {
-        const toTarget = new THREE.Vector2(lookAtX - clampedX, lookAtZ - clampedZ)
-        if (toTarget.lengthSq() > 0.01) {
-          toTarget.normalize()
-          dirX = toTarget.x
-          dirZ = toTarget.y
-        }
-      } else {
-        const walkDir = new THREE.Vector2(
-          clampedX - this.camera.position.x,
-          clampedZ - this.camera.position.z
-        )
-        if (walkDir.lengthSq() > 0.25) {
-          walkDir.normalize()
-          dirX = walkDir.x
-          dirZ = walkDir.y
-        }
-      }
-
-      this.targetCameraPos = new THREE.Vector3(clampedX, 1.78, clampedZ)
-      this.targetControlsLook = new THREE.Vector3(
-        clampedX + dirX * 2.5,
-        1.72,
-        clampedZ + dirZ * 2.5
-      )
+    if (typeof lookAtX === 'number' && typeof lookAtZ === 'number') {
+      // Colocar la cámara en el nodo de movilidad mirando directamente hacia la estación asociada
+      this.targetCameraPos = new THREE.Vector3(clampedX, 3.1, clampedZ)
+      this.targetControlsLook = new THREE.Vector3(lookAtX, 1.55, lookAtZ)
     } else {
-      // En modo Mapa 3D: desplazar cámara y objetivo manteniendo el vector de observación actual
       const offset = new THREE.Vector3().subVectors(this.camera.position, this.controls.target)
       const newTarget = new THREE.Vector3(clampedX, 1.4, clampedZ)
       this.targetControlsLook = newTarget
@@ -529,9 +476,6 @@ export class WorkshopEngine {
     }
   }
 
-  /**
-   * Controles de navegación tipo Google Maps: avanzar/retroceder/lateral, rotar, zoom y orientar al Norte
-   */
   public stepMove(forwardDelta: number, rightDelta: number) {
     this.targetCameraPos = null
     this.targetControlsLook = null
@@ -551,58 +495,8 @@ export class WorkshopEngine {
     this.camera.position.add(moveVec)
     this.controls.target.add(moveVec)
 
-    // Mantener dentro de los límites del complejo
     this.camera.position.x = THREE.MathUtils.clamp(this.camera.position.x, -35, 35)
     this.camera.position.z = THREE.MathUtils.clamp(this.camera.position.z, -12, 24)
-    if (this.streetViewMode) {
-      this.camera.position.y = 1.78
-      this.controls.target.y = 1.72
-    }
-  }
-
-  public stepZoom(zoomFactor: number) {
-    this.targetCameraPos = null
-    this.targetControlsLook = null
-    const offset = new THREE.Vector3().subVectors(this.camera.position, this.controls.target)
-    const dist = offset.length()
-    const newDist = THREE.MathUtils.clamp(dist * zoomFactor, 1.2, 48)
-    offset.setLength(newDist)
-    this.camera.position.copy(this.controls.target).add(offset)
-  }
-
-  public stepRotateYaw(angleRad: number) {
-    this.targetCameraPos = null
-    this.targetControlsLook = null
-
-    if (this.streetViewMode) {
-      // En Street View giramos la mirada alrededor de la posición de los ojos
-      const lookOffset = new THREE.Vector3().subVectors(this.controls.target, this.camera.position)
-      lookOffset.applyAxisAngle(new THREE.Vector3(0, 1, 0), angleRad)
-      this.controls.target.copy(this.camera.position).add(lookOffset)
-    } else {
-      // En modo Mapa 3D orbitamos alrededor del objetivo
-      const camOffset = new THREE.Vector3().subVectors(this.camera.position, this.controls.target)
-      camOffset.applyAxisAngle(new THREE.Vector3(0, 1, 0), angleRad)
-      this.camera.position.copy(this.controls.target).add(camOffset)
-    }
-  }
-
-  public resetCompassNorth() {
-    const dist = this.camera.position.distanceTo(this.controls.target)
-    const t = this.controls.target.clone()
-    if (this.streetViewMode) {
-      this.targetCameraPos = this.camera.position.clone()
-      this.targetControlsLook = new THREE.Vector3(
-        this.camera.position.x,
-        1.72,
-        this.camera.position.z - 2.5
-      )
-    } else {
-      const horizDist = Math.max(3.5, dist * 0.78)
-      const height = Math.max(3.5, this.camera.position.y)
-      this.targetControlsLook = t
-      this.targetCameraPos = new THREE.Vector3(t.x, height, t.z + horizDist)
-    }
   }
 
   private notifyGlbLoaded(fileName: string) {
@@ -847,7 +741,7 @@ export class WorkshopEngine {
 
     this.callbacks.onStatusChange(
       'ready',
-      'Complejo XR activo con navegación estilo Google Maps y Street View.'
+      'Complejo Volvo HapticBus 3D activo con 36 puntos de movilidad.'
     )
 
     tryLoadGlbModel('/models/diesel-engine-inline6.glb', {
@@ -1000,7 +894,6 @@ export class WorkshopEngine {
 
   public setCameraPreset(presetId: CameraPresetId) {
     this.autoTourEnabled = false
-    this.streetViewMode = false
     const preset = CAMERA_PRESETS[presetId] ?? CAMERA_PRESETS.overview
     this.targetCameraPos = preset.position.clone()
     this.targetControlsLook = preset.target.clone()
@@ -1014,8 +907,8 @@ export class WorkshopEngine {
 
   public setLiftRaised(raised: boolean) {
     this.desiredLiftY = raised ? 1.35 : 0
-    this.refs.bayStatusLights.bay1.color.setHex(raised ? 0x38bdf8 : 0x22c55e)
-    this.refs.bayStatusLights.bay1.emissive.setHex(raised ? 0x38bdf8 : 0x22c55e)
+    this.refs.bayStatusLights.bay1.color.setHex(raised ? 0x00a3ff : 0x22c55e)
+    this.refs.bayStatusLights.bay1.emissive.setHex(raised ? 0x00a3ff : 0x22c55e)
   }
 
   public highlightObject(id: string | null) {
@@ -1059,13 +952,20 @@ export class WorkshopEngine {
   private getHitWaypoint(
     clientX: number,
     clientY: number
-  ): { x: number; z: number; lookX: number; lookZ: number } | null {
+  ): {
+    wp: { x: number; z: number; lookX: number; lookZ: number }
+    mesh: THREE.Mesh
+  } | null {
     this.updatePointerNDC(clientX, clientY)
     this.raycaster.setFromCamera(this.pointer, this.camera)
     const hits = this.raycaster.intersectObjects(this.waypointMeshes, true)
     for (const h of hits) {
       if (h.object.userData?.streetWaypoint) {
-        return h.object.userData.streetWaypoint
+        const rootMesh = (h.object.parent?.userData?.streetWaypoint ? h.object.parent : h.object) as THREE.Mesh
+        return {
+          wp: h.object.userData.streetWaypoint,
+          mesh: rootMesh
+        }
       }
     }
     return null
@@ -1084,23 +984,20 @@ export class WorkshopEngine {
   }
 
   private onPointerMove = (e: PointerEvent) => {
-    const wp = this.getHitWaypoint(e.clientX, e.clientY)
-    const hitId = wp ? null : this.getHitInteractiveId(e.clientX, e.clientY)
+    const wpHit = this.getHitWaypoint(e.clientX, e.clientY)
+    this.hoveredWaypointMesh = wpHit ? wpHit.mesh : null
+
+    const hitId = wpHit ? null : this.getHitInteractiveId(e.clientX, e.clientY)
     const floorPt = this.getFloorIntersection(e.clientX, e.clientY)
 
-    if (floorPt && (!hitId || this.streetViewMode)) {
+    if (floorPt && !hitId) {
       this.streetCursorGroup.visible = true
-      this.streetCursorGroup.position.set(floorPt.x, 0.028, floorPt.z)
+      this.streetCursorGroup.position.set(floorPt.x, 0.03, floorPt.z)
     } else {
       this.streetCursorGroup.visible = false
     }
 
-    if (wp || hitId || this.streetViewMode) {
-      this.renderer.domElement.style.cursor = 'pointer'
-    } else {
-      this.renderer.domElement.style.cursor = this.leftClickPanMode ? 'move' : 'grab'
-    }
-
+    this.renderer.domElement.style.cursor = wpHit || hitId ? 'pointer' : 'grab'
     this.callbacks.onHover(hitId, { x: e.clientX, y: e.clientY })
   }
 
@@ -1115,14 +1012,14 @@ export class WorkshopEngine {
     const dy = Math.abs(e.clientY - this.pointerDownPos.y)
     if (dx > 6 || dy > 6) return
 
-    // 1. Si hizo clic en un nodo Street View del piso, caminar/deslizarse hacia ese nodo
-    const wp = this.getHitWaypoint(e.clientX, e.clientY)
-    if (wp) {
-      this.walkOrGlideToFloorPoint(wp.x, wp.z, wp.lookX, wp.lookZ)
+    // 1. Clic en cualquiera de los 36 puntos de movilidad del suelo
+    const wpHit = this.getHitWaypoint(e.clientX, e.clientY)
+    if (wpHit) {
+      this.walkOrGlideToFloorPoint(wpHit.wp.x, wpHit.wp.z, wpHit.wp.lookX, wpHit.wp.lookZ)
       return
     }
 
-    // 2. Si hizo clic en un objeto interactivo 3D (camión, pieza GLB, técnico)
+    // 2. Clic en objeto interactivo 3D
     const hitId = this.getHitInteractiveId(e.clientX, e.clientY)
     if (hitId) {
       this.highlightObject(hitId)
@@ -1130,22 +1027,10 @@ export class WorkshopEngine {
       return
     }
 
-    // 3. En modo Street View, un clic directo sobre cualquier parte del suelo camina hasta allí
-    if (this.streetViewMode) {
-      const floorPt = this.getFloorIntersection(e.clientX, e.clientY)
-      if (floorPt) {
-        this.walkOrGlideToFloorPoint(floorPt.x, floorPt.z)
-        return
-      }
-    }
-
     this.highlightObject(null)
     this.callbacks.onSelect(null)
   }
 
-  /**
-   * Doble clic en cualquier punto del suelo te desplaza hacia ese lugar (igual que Google Maps / Street View)
-   */
   private onDoubleClick = (e: MouseEvent) => {
     const floorPt = this.getFloorIntersection(e.clientX, e.clientY)
     if (floorPt) {
@@ -1187,9 +1072,8 @@ export class WorkshopEngine {
     this.animationFrameId = requestAnimationFrame(this.animate)
     const elapsed = this.clock.getElapsedTime()
 
-    // 0. Movimiento continuo por teclado (WASD / Flechas estilo Google Street View)
     if (this.keysPressed.size > 0) {
-      const speed = this.streetViewMode ? 0.14 : 0.22
+      const speed = 0.22
       let fwd = 0
       let right = 0
       if (this.keysPressed.has('w') || this.keysPressed.has('arrowup')) fwd += speed
@@ -1201,15 +1085,12 @@ export class WorkshopEngine {
       }
     }
 
-    // 1. Movimiento suave del elevador hidráulico
     this.refs.liftPlatformGroup.position.y +=
       (this.desiredLiftY - this.refs.liftPlatformGroup.position.y) * 0.06
 
-    // 2. Rotación de ventilador de motor D16 y turbina neumática
     this.refs.engineFan.rotation.z = elapsed * 4.5
     this.refs.airTurbineRotor.rotation.z = elapsed * 6.5
 
-    // 3. Animación cinemática de Operarios e Ingenieros Automotrices
     this.refs.specialists.forEach((sp, idx) => {
       const effectiveRole: 'engineer' | 'operator' =
         this.personnelActionMode === 'inspect'
@@ -1257,31 +1138,30 @@ export class WorkshopEngine {
       }
     })
 
-    // 4. Escáneres láser AR, Puente Grúa y pruebas dinámicas
     this.refs.laserScannerBody.position.y = 1.9 + Math.sin(elapsed * 1.8) * 1.45
     this.refs.laserScannerChassis.position.z = Math.sin(elapsed * 1.25) * 3.1
     this.refs.gantryCraneBridge.position.z = Math.sin(elapsed * 0.55) * 2.5
     this.refs.partPuertaSlot.rotation.y = Math.sin(elapsed * 1.15) * 0.22
     this.refs.partAsientosSlot.position.y = 0.32 + Math.sin(elapsed * 3.4) * 0.032
 
-    // 5. Chispas de soldadura en Taller 03
     const weldPulse = Math.max(0, Math.sin(elapsed * 19) * Math.cos(elapsed * 7.5))
     this.refs.weldingFlashLight.intensity = weldPulse * 14
     this.refs.weldingSparks.rotation.y = elapsed * 5.2
     this.refs.weldingSparks.scale.setScalar(0.7 + weldPulse * 0.65)
 
-    // 6. Anillos holográficos y nodos Street View
     this.refs.arRings.forEach((ring, i) => {
       const s = 1 + Math.sin(elapsed * 2.6 + i) * 0.035
       ring.scale.setScalar(s)
     })
+
     this.waypointMeshes.forEach((wp, i) => {
-      const s = 1 + Math.sin(elapsed * 3.2 + i * 0.8) * 0.08
+      const isHovered = this.hoveredWaypointMesh === wp
+      const s = isHovered ? 1.32 : 1 + Math.sin(elapsed * 3.2 + i * 0.6) * 0.09
       wp.scale.setScalar(s)
     })
+
     this.refs.ambientParticles.rotation.y = elapsed * 0.025
 
-    // 7. Pulso en balizas y anillo de selección
     this.refs.bayStatusLights.bay1.emissiveIntensity = 1.1 + Math.sin(elapsed * 3.5) * 0.35
     this.refs.bayStatusLights.bay2.emissiveIntensity = 1.1 + Math.cos(elapsed * 4.0) * 0.4
     if (this.selectionRing.visible) {
@@ -1289,13 +1169,11 @@ export class WorkshopEngine {
       this.selectionRing.scale.setScalar(this.selectionBaseScale * pulse)
     }
 
-    // 8. Pantalla de telemetría en vivo
     if (elapsed - this.lastDiagDraw > 0.065) {
       this.materials.updateDiagScreen(elapsed)
       this.lastDiagDraw = elapsed
     }
 
-    // 9. Transición suave de cámara
     if (this.targetCameraPos && this.targetControlsLook && !this.autoTourEnabled) {
       this.camera.position.lerp(this.targetCameraPos, 0.085)
       this.controls.target.lerp(this.targetControlsLook, 0.085)
@@ -1306,23 +1184,6 @@ export class WorkshopEngine {
     }
 
     this.controls.update()
-
-    // 10. Emitir telemetría de brújula y minimapa Google Maps (~15 FPS)
-    if (elapsed - this.lastTelemetryTime > 0.065 && this.callbacks.onCameraTelemetry) {
-      const dir = new THREE.Vector3()
-        .subVectors(this.controls.target, this.camera.position)
-        .setY(0)
-      const yawRad = Math.atan2(dir.x, -dir.z)
-      const posRef = this.streetViewMode ? this.camera.position : this.controls.target
-      this.callbacks.onCameraTelemetry({
-        x: posRef.x,
-        z: posRef.z,
-        yawDeg: THREE.MathUtils.radToDeg(yawRad),
-        streetView: this.streetViewMode
-      })
-      this.lastTelemetryTime = elapsed
-    }
-
     this.renderer.render(this.scene, this.camera)
   }
 
